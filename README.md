@@ -1,36 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Finance Tracker
 
-## Getting Started
+Personal finance app for EUR / CHF checking accounts and cash, with Needs · Play · Investment · Savings envelopes.
 
-First, run the development server:
+**Stack:** Next.js (App Router) · TypeScript · Tailwind CSS · shadcn-style UI · PostgreSQL · Prisma
+
+Designed for local Docker Compose and Kubernetes (persistent Postgres, health checks, standalone Next.js output).
+
+## Features
+
+- **Dashboard** — net worth (FX-aware), balances per account/division, income/expenses, category chart, recent activity
+- **Expenses / Income** — title, date, amount, account + division, extensible category; currency from account
+- **Change** — account transfers, division transfers, EUR↔CHF conversions (never counted as income/expense)
+- **Accounts** — live balances computed from the ledger (no duplicated stored totals)
+
+## Quick start (local)
+
+### 1. Start PostgreSQL
+
+```bash
+docker compose up -d db
+```
+
+Or use any Postgres 16 instance and set `DATABASE_URL`.
+
+### 2. Configure env
+
+```bash
+cp .env.example .env
+```
+
+### 3. Migrate & seed
+
+```bash
+npm install
+npm run db:migrate
+npm run db:seed
+```
+
+Seed creates:
+
+- Conto EUR, Conto CHF, Cash
+- 4 divisions each (Needs, Play, Investment, Savings)
+- Default expense/income categories
+- Settings row (EUR→CHF rate)
+
+### 4. Dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) → redirects to `/dashboard`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Next.js development server |
+| `npm run build` | Production build (`output: "standalone"`) |
+| `npm run start` | Start production server |
+| `npm run db:generate` | Prisma client generate |
+| `npm run db:migrate` | `prisma migrate dev` |
+| `npm run db:deploy` | `prisma migrate deploy` (production) |
+| `npm run db:seed` | Idempotent seed |
+| `npm run db:studio` | Prisma Studio |
 
-## Learn More
+## Docker (full stack)
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+docker compose up --build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- App: `http://localhost:3000`
+- Postgres volume: `finance_tracker_pg`
+- Entrypoint runs `prisma migrate deploy` + seed, then `node server.js`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Kubernetes
 
-## Deploy on Vercel
+See `k8s/manifests.yaml`:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Namespace, Secret, ConfigMap
+- Postgres Deployment + PVC + Service
+- App Deployment + Service + Ingress
+- Readiness/liveness on `/api/health`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Update image name, host, and secrets before applying:
+
+```bash
+docker build -t finance-tracker:latest .
+kubectl apply -f k8s/manifests.yaml
+```
+
+## Domain model
+
+| Entity | Role |
+|--------|------|
+| `Account` | Conto EUR / Conto CHF / Cash (+ future accounts) |
+| `AccountDivision` | Needs / Play / Investment / Savings |
+| `Category` | Extensible EXPENSE / INCOME labels |
+| `Transaction` | External expense or income (`Decimal(19,4)`) |
+| `Transfer` | Internal ACCOUNT / DIVISION / CONVERSION |
+| `Settings` | Display currency + EUR→CHF rate for net worth |
+
+Balances = Σ income − Σ expenses − Σ transfer out + Σ transfer in per division.
+
+## API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Liveness/readiness |
+| GET | `/api/dashboard` | Aggregated dashboard |
+| GET | `/api/accounts` | Accounts + computed balances |
+| GET/POST | `/api/categories` | List / create categories |
+| GET/POST | `/api/transactions?type=` | List / create EXPENSE or INCOME |
+| PATCH/DELETE | `/api/transactions/[id]` | Update / delete |
+| GET/POST | `/api/transfers` | List / create changes |
+| DELETE | `/api/transfers/[id]` | Delete change |
+| GET/PATCH | `/api/settings` | FX / display currency |
+
+## Future-ready
+
+Schema and services leave room for budgets, recurring transactions, analytics, and extra accounts without rewriting the ledger core.

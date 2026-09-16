@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Currency {
+  EUR
+  CHF
+}
+
+enum AccountKind {
+  CHECKING
+  CASH
+}
+
+enum DivisionType {
+  NEEDS
+  PLAY
+  INVESTMENT
+  SAVINGS
+}
+
+enum CategoryKind {
+  EXPENSE
+  INCOME
+}
+
+enum TransactionType {
+  EXPENSE
+  INCOME
+}
+
+enum TransferKind {
+  ACCOUNT
+  DIVISION
+  CONVERSION
+}
+
+/// Bank or cash account. Currency is first-class and drives transaction currency.
+model Account {
+  id        String      @id @default(cuid())
+  name      String
+  currency  Currency
+  kind      AccountKind @default(CHECKING)
+  sortOrder Int         @default(0)
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  divisions           AccountDivision[]
+  transactions        Transaction[]
+  templates           TransactionTemplate[]
+  transfersFrom       Transfer[]        @relation("TransferFromAccount")
+  transfersTo         Transfer[]        @relation("TransferToAccount")
+
+  @@unique([name])
+  @@index([currency])
+  @@index([sortOrder])
+}
+
+/// Fixed envelope within an account: Needs / Play / Investment / Savings.
+model AccountDivision {
+  id        String       @id @default(cuid())
+  accountId String
+  type      DivisionType
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  account        Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  transactions   Transaction[]
+  templates      TransactionTemplate[]
+  transfersFrom  Transfer[]   @relation("TransferFromDivision")
+  transfersTo    Transfer[]   @relation("TransferToDivision")
+
+  @@unique([accountId, type])
+  @@index([accountId])
+}
+
+/// Extensible expense/income categories (House, Salary, …).
+model Category {
+  id        String       @id @default(cuid())
+  name      String
+  kind      CategoryKind
+  color     String?
+  icon      String?
+  sortOrder Int          @default(0)
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  transactions Transaction[]
+  templates    TransactionTemplate[]
+
+  @@unique([name, kind])
+  @@index([kind, sortOrder])
+}
+
+/// Prefill presets for recurring expenses/income (salary, fuel, …).
+/// Applying a template creates a Transaction with today's date.
+model TransactionTemplate {
+  id         String          @id @default(cuid())
+  name       String
+  type       TransactionType
+  notes      String?
+  amount     Decimal?        @db.Decimal(19, 4)
+  accountId  String?
+  divisionId String?
+  categoryId String?
+  sortOrder  Int             @default(0)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  account  Account?         @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  division AccountDivision? @relation(fields: [divisionId], references: [id], onDelete: Restrict)
+  category Category?        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([name, type])
+  @@index([type, sortOrder])
+}
+
+/// External money movement: expense or income. Currency comes from the account.
+model Transaction {
+  id         String          @id @default(cuid())
+  type       TransactionType
+  title      String
+  notes      String?
+  date       DateTime        @db.Date
+  amount     Decimal         @db.Decimal(19, 4)
+  currency   Currency
+  accountId  String
+  divisionId String
+  categoryId String
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  account  Account         @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  division AccountDivision @relation(fields: [divisionId], references: [id], onDelete: Restrict)
+  category Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([type, date])
+  @@index([accountId, date])
+  @@index([divisionId, date])
+  @@index([categoryId])
+  @@index([date])
+}
+
+/// Internal movements only: account/division transfers and EUR↔CHF conversions.
+/// Never counted as income or expense.
+model Transfer {
+  id              String       @id @default(cuid())
+  kind            TransferKind
+  title           String
+  notes           String?
+  date            DateTime     @db.Date
+  fromAccountId   String
+  fromDivisionId  String
+  fromAmount      Decimal      @db.Decimal(19, 4)
+  fromCurrency    Currency
+  toAccountId     String
+  toDivisionId    String
+  toAmount        Decimal      @db.Decimal(19, 4)
+  toCurrency      Currency
+  /// CHF per 1 EUR when kind = CONVERSION; null otherwise.
+  exchangeRate    Decimal?     @db.Decimal(19, 8)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  fromAccount  Account         @relation("TransferFromAccount", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  fromDivision AccountDivision @relation("TransferFromDivision", fields: [fromDivisionId], references: [id], onDelete: Restrict)
+  toAccount    Account         @relation("TransferToAccount", fields: [toAccountId], references: [id], onDelete: Restrict)
+  toDivision   AccountDivision @relation("TransferToDivision", fields: [toDivisionId], references: [id], onDelete: Restrict)
+
+  @@index([kind, date])
+  @@index([fromAccountId, date])
+  @@index([toAccountId, date])
+  @@index([date])
+}
+
+/// App-wide settings (FX default for net-worth aggregation).
+model Settings {
+  id             String   @id @default("default")
+  /// How many CHF for 1 EUR (dashboard FX).
+  eurToChfRate   Decimal  @default(0.95) @db.Decimal(19, 8)
+  displayCurrency Currency @default(EUR)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// --- Future-ready stubs (commented models can be enabled later) ---
+// model Budget { ... }
+// model RecurringTransaction { ... }
+// model ExchangeRateHistory { ... }

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="8" fill="#0d1210"/>
+  <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="7.25" stroke="#3dba7e" stroke-opacity="0.3" stroke-width="1.5"/>
+  <!-- coin -->
+  <circle cx="9" cy="9.5" r="3.4" fill="#4a9fc2"/>
+  <circle cx="9" cy="9.5" r="2.2" stroke="#0d1210" stroke-width="1.15" fill="none"/>
+  <path d="M10.35 8.35c-.3-.45-.8-.7-1.4-.7-.95 0-1.6.7-1.6 1.7s.65 1.7 1.6 1.7c.55 0 1.05-.2 1.35-.6" stroke="#0d1210" stroke-width="1.05" stroke-linecap="round" fill="none"/>
+  <path d="M7.15 9.5h2.7M7.15 10.85h2.7" stroke="#0d1210" stroke-width="0.95" stroke-linecap="round"/>
+  <!-- piggy body -->
+  <ellipse cx="16.1" cy="18" rx="8.4" ry="6.5" fill="#3dba7e"/>
+  <!-- snout -->
+  <ellipse cx="25.3" cy="18.2" rx="2.7" ry="2.15" fill="#2fa66a"/>
+  <circle cx="24.65" cy="17.85" r="0.55" fill="#0d1210"/>
+  <circle cx="26.1" cy="17.85" r="0.55" fill="#0d1210"/>
+  <!-- ear -->
+  <path d="M10 12.6c.15-2.2 1.7-3.7 3.45-3.55.35.03.65.15.9.35-1.55.85-2.55 2.55-2.55 4.45v.7C10.9 14 10 13.3 10 12.6z" fill="#2fa66a"/>
+  <!-- eye -->
+  <circle cx="18.35" cy="15.7" r="1.1" fill="#06140d"/>
+  <circle cx="18.65" cy="15.4" r="0.35" fill="#e8efe9"/>
+  <!-- coin slot -->
+  <rect x="13.2" y="13.15" width="5.4" height="1.2" rx="0.6" fill="#0d1210" fill-opacity="0.5"/>
+  <!-- legs -->
+  <rect x="11" y="23.1" width="2.35" height="2.5" rx="0.75" fill="#2fa66a"/>
+  <rect x="17.6" y="23.1" width="2.35" height="2.5" rx="0.75" fill="#2fa66a"/>
+</svg>
