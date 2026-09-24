@@ -26,6 +26,11 @@ export function AccountsPage() {
   const [newCurrency, setNewCurrency] = useState<"EUR" | "CHF">("EUR");
   const [newKind, setNewKind] = useState<"CHECKING" | "CASH">("CHECKING");
   const [creating, setCreating] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [confirmName, setConfirmName] = useState("");
 
   function startEdit(id: string, name: string) {
     setEditingId(id);
@@ -62,21 +67,32 @@ export function AccountsPage() {
     }
   }
 
-  async function removeAccount(id: string, name: string) {
-    const first = window.confirm(
-      `Delete account "${name}"? Its divisions will be removed.`,
-    );
-    if (!first) return;
-    const second = window.confirm(
-      `Confirm again: permanently delete "${name}"? This cannot be undone.`,
-    );
-    if (!second) return;
+  function askDelete(id: string, name: string) {
+    setPendingDelete({ id, name });
+    setConfirmName("");
+    setFormError(null);
+  }
 
-    setSavingId(id);
+  function closeDelete() {
+    if (savingId) return;
+    setPendingDelete(null);
+    setConfirmName("");
+  }
+
+  async function removeAccount() {
+    if (!pendingDelete) return;
+    if (confirmName !== pendingDelete.name) return;
+    setSavingId(pendingDelete.id);
     setFormError(null);
     try {
-      await fetchJson(`/api/accounts/${id}`, { method: "DELETE" });
-      if (editingId === id) cancelEdit();
+      await fetchJson(`/api/accounts/${pendingDelete.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmName }),
+      });
+      if (editingId === pendingDelete.id) cancelEdit();
+      setPendingDelete(null);
+      setConfirmName("");
       await reload();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : "Failed to delete account");
@@ -284,7 +300,7 @@ export function AccountsPage() {
                     variant="danger"
                     className="min-h-10 w-full touch-manipulation"
                     disabled={savingId === account.id}
-                    onClick={() => void removeAccount(account.id, account.name)}
+                    onClick={() => askDelete(account.id, account.name)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     {savingId === account.id ? "Deleting…" : "Delete account"}
@@ -295,6 +311,58 @@ export function AccountsPage() {
           );
         })}
       </div>
+
+      {pendingDelete ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
+            className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[var(--shadow)]"
+          >
+            <h2
+              id="delete-account-title"
+              className="font-[family-name:var(--font-display)] text-xl font-semibold"
+            >
+              Delete {pendingDelete.name}
+            </h2>
+            <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+              Expenses and income on this account are deleted. Changes stay:
+              whichever side used this account is shown as ACCOUNT DELETED.
+            </p>
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="confirm-account-name">
+                Type <span className="font-medium text-[var(--foreground)]">{pendingDelete.name}</span> to confirm
+              </Label>
+              <Input
+                id="confirm-account-name"
+                autoFocus
+                value={confirmName}
+                onChange={(e) => setConfirmName(e.target.value)}
+                placeholder={pendingDelete.name}
+              />
+            </div>
+            {formError ? (
+              <p className="mt-3 text-sm text-[var(--danger)]">{formError}</p>
+            ) : null}
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="ghost" onClick={closeDelete}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                disabled={
+                  confirmName !== pendingDelete.name || savingId === pendingDelete.id
+                }
+                onClick={() => void removeAccount()}
+              >
+                {savingId === pendingDelete.id ? "Deleting…" : "Delete account"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
