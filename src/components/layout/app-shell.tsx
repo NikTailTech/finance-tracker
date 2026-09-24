@@ -8,6 +8,7 @@ import {
   LayoutTemplate,
   ListOrdered,
   PiggyBank,
+  Tags,
   TrendingDown,
   TrendingUp,
   Wallet,
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/review", label: "Review", icon: ListOrdered },
   { href: "/change", label: "Change", icon: ArrowLeftRight },
   { href: "/accounts", label: "Accounts", icon: Wallet },
+  { href: "/categories", label: "Categories", icon: Tags },
   { href: "/templates", label: "Templates", icon: LayoutTemplate },
 ];
 

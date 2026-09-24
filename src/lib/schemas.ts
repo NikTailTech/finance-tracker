@@ -155,6 +155,20 @@ export const categoryCreateSchema = z.object({
   icon: z.string().trim().max(64).optional().nullable(),
 });
 
+export const categoryUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80).optional(),
+    kind: z.enum(["EXPENSE", "INCOME"]).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.name !== undefined ||
+      data.kind !== undefined ||
+      data.isActive !== undefined,
+    { message: "No fields to update" },
+  );
+
 export const accountCreateSchema = z.object({
   name: z.string().trim().min(1).max(80),
   currency: z.enum(["EUR", "CHF"]),

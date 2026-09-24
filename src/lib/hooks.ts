@@ -17,6 +17,16 @@ export type CategoryOption = {
   kind: "EXPENSE" | "INCOME";
 };
 
+export type ManagedCategory = {
+  id: string;
+  name: string;
+  kind: "EXPENSE" | "INCOME";
+  isActive: boolean;
+  sortOrder: number;
+  transactionCount: number;
+  templateCount: number;
+};
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const data = await res.json();
@@ -72,6 +82,33 @@ export function useCategories(kind: "EXPENSE" | "INCOME") {
   }, [reload]);
 
   return { categories, loading, reload };
+}
+
+export function useManagedCategories() {
+  const [categories, setCategories] = useState<ManagedCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchJson<ManagedCategory[]>(
+        "/api/categories?includeInactive=1",
+      );
+      setCategories(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load categories");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  return { categories, loading, error, reload };
 }
 
 export { fetchJson };
