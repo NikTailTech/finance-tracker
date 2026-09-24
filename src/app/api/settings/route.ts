@@ -20,7 +20,7 @@ function serializeSettings(settings: {
 }) {
   return {
     id: settings.id,
-    eurToChfRate: serializeRate(settings.eurToChfRate),
+    eurToChfRate: serializeRate(settings.eurToChfRate.toString()),
     displayCurrency: settings.displayCurrency,
     theme: settings.theme,
     primaryColor: settings.primaryColor,
