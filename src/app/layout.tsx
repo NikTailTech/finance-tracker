@@ -16,6 +16,8 @@ const outfit = Outfit({
   subsets: ["latin"],
 });
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const appearance = await loadAppearance();
   const icon = `/api/favicon?icon=${encodeURIComponent(appearance.icon)}&color=${encodeURIComponent(appearance.primaryColor)}`;

@@ -1,9 +1,27 @@
-import { prisma } from "@/lib/db";
 import { resolveNavOrder, type AppTheme } from "@/lib/appearance";
 import { serializeRate } from "@/lib/money";
 import type { AppearanceState } from "@/components/layout/appearance";
 
+function defaultAppearance(): AppearanceState {
+  return {
+    theme: "dark",
+    primaryColor: "#3dba7e",
+    icon: "piggy",
+    appName: "Finance Tracker",
+    navOrder: resolveNavOrder(""),
+    displayCurrency: "EUR",
+    eurToChfRate: serializeRate("0.95"),
+  };
+}
+
 export async function loadAppearance(): Promise<AppearanceState> {
+  // next build prerenders the root layout. Skip the database so the image
+  // does not need a real DATABASE_URL; runtime requests still load settings.
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return defaultAppearance();
+  }
+
+  const { prisma } = await import("@/lib/db");
   const settings = await prisma.settings.upsert({
     where: { id: "default" },
     update: {},
