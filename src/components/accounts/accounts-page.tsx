@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Pencil, Plus, Check, X } from "lucide-react";
+import { Pencil, Plus, Check, Trash2, X } from "lucide-react";
 import { useAccounts, fetchJson } from "@/lib/hooks";
 import {
   Card,
@@ -57,6 +57,29 @@ export function AccountsPage() {
       await reload();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : "Failed to rename");
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function removeAccount(id: string, name: string) {
+    const first = window.confirm(
+      `Delete account "${name}"? Its divisions will be removed.`,
+    );
+    if (!first) return;
+    const second = window.confirm(
+      `Confirm again: permanently delete "${name}"? This cannot be undone.`,
+    );
+    if (!second) return;
+
+    setSavingId(id);
+    setFormError(null);
+    try {
+      await fetchJson(`/api/accounts/${id}`, { method: "DELETE" });
+      if (editingId === id) cancelEdit();
+      await reload();
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : "Failed to delete account");
     } finally {
       setSavingId(null);
     }
@@ -255,6 +278,18 @@ export function AccountsPage() {
                     </span>
                   </div>
                 ))}
+                {!isEditing ? (
+                  <Button
+                    type="button"
+                    variant="danger"
+                    className="min-h-10 w-full touch-manipulation"
+                    disabled={savingId === account.id}
+                    onClick={() => void removeAccount(account.id, account.name)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {savingId === account.id ? "Deleting…" : "Delete account"}
+                  </Button>
+                ) : null}
               </CardContent>
             </Card>
           );

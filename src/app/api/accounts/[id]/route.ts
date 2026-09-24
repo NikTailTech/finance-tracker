@@ -41,3 +41,41 @@ export async function PATCH(request: Request, { params }: Params) {
     return handleApiError(error);
   }
 }
+
+export async function DELETE(_request: Request, { params }: Params) {
+  try {
+    const { id } = await params;
+    const existing = await prisma.account.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { transactions: true, transfersFrom: true, transfersTo: true },
+        },
+      },
+    });
+    if (!existing || !existing.isActive) {
+      return jsonError("Account not found", 404);
+    }
+
+    const transferCount =
+      existing._count.transfersFrom + existing._count.transfersTo;
+    if (existing._count.transactions > 0 || transferCount > 0) {
+      return jsonError(
+        "This account has transactions or transfers and cannot be deleted",
+        409,
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.transactionTemplate.updateMany({
+        where: { accountId: id },
+        data: { accountId: null, divisionId: null },
+      });
+      await tx.account.delete({ where: { id } });
+    });
+
+    return jsonOk({ deleted: true, id });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}

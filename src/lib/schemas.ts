@@ -248,6 +248,11 @@ export const templateReorderSchema = z.object({
   orderedIds: z.array(z.string().cuid()).min(1),
 });
 
+export const categoryReorderSchema = z.object({
+  kind: z.enum(["EXPENSE", "INCOME"]),
+  orderedIds: z.array(z.string().cuid()).min(1),
+});
+
 export const settingsUpdateSchema = z.object({
   eurToChfRate: z
     .string()
@@ -274,6 +279,15 @@ export const settingsUpdateSchema = z.object({
     })
     .optional(),
   displayCurrency: z.enum(["EUR", "CHF"]).optional(),
+  theme: z.enum(["dark", "light", "system"]).optional(),
+  primaryColor: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, "Color must be a hex value like #3dba7e")
+    .optional(),
+  icon: z.enum(["piggy", "wallet", "coins", "landmark", "banknote", "gem"]).optional(),
+  appName: z.string().trim().min(1).max(40).optional(),
+  navOrder: z.array(z.string().min(1)).optional(),
 });
 
 export type TransactionCreateInput = z.infer<typeof transactionCreateSchema>;

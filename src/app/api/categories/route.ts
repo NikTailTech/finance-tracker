@@ -24,7 +24,6 @@ export async function GET(request: Request) {
       const categories = await prisma.category.findMany({
         where,
         orderBy: [
-          { isActive: "desc" },
           { kind: "asc" },
           { sortOrder: "asc" },
           { name: "asc" },

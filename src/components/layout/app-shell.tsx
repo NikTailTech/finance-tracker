@@ -4,34 +4,61 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeftRight,
+  Banknote,
+  Coins,
+  Gem,
+  Landmark,
   LayoutDashboard,
   LayoutTemplate,
   ListOrdered,
   PiggyBank,
+  Settings,
   Tags,
   TrendingDown,
   TrendingUp,
   Wallet,
   Menu,
   X,
+  type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { NAV_ITEMS } from "@/lib/appearance";
 import { cn } from "@/lib/utils";
+import { useAppearance } from "@/components/layout/appearance";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/expenses", label: "Expenses", icon: TrendingDown },
-  { href: "/income", label: "Income", icon: TrendingUp },
-  { href: "/review", label: "Review", icon: ListOrdered },
-  { href: "/change", label: "Change", icon: ArrowLeftRight },
-  { href: "/accounts", label: "Accounts", icon: Wallet },
-  { href: "/categories", label: "Categories", icon: Tags },
-  { href: "/templates", label: "Templates", icon: LayoutTemplate },
-];
+const NAV_ICONS: Record<string, LucideIcon> = {
+  "/dashboard": LayoutDashboard,
+  "/expenses": TrendingDown,
+  "/income": TrendingUp,
+  "/review": ListOrdered,
+  "/change": ArrowLeftRight,
+  "/accounts": Wallet,
+  "/categories": Tags,
+  "/templates": LayoutTemplate,
+  "/settings": Settings,
+};
+
+const BRAND_ICONS: Record<string, LucideIcon> = {
+  piggy: PiggyBank,
+  wallet: Wallet,
+  coins: Coins,
+  landmark: Landmark,
+  banknote: Banknote,
+  gem: Gem,
+};
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { appearance } = useAppearance();
+  const BrandIcon = BRAND_ICONS[appearance.icon] ?? PiggyBank;
+
+  const nav = useMemo(() => {
+    const byHref = new Map(NAV_ITEMS.map((item) => [item.href, item]));
+    return appearance.navOrder
+      .map((href) => byHref.get(href as (typeof NAV_ITEMS)[number]["href"]))
+      .filter((item): item is (typeof NAV_ITEMS)[number] => Boolean(item));
+  }, [appearance.navOrder]);
 
   return (
     <div className="min-h-screen max-w-[100vw] overflow-x-clip">
@@ -43,9 +70,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md lg:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
-            <PiggyBank className="h-5 w-5 shrink-0 text-[var(--primary)]" />
+            <BrandIcon className="h-5 w-5 shrink-0 text-[var(--primary)]" />
             <span className="truncate font-[family-name:var(--font-display)] text-lg font-semibold tracking-tight">
-              Finance Tracker
+              {appearance.appName}
             </span>
           </div>
           <button
@@ -59,8 +86,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         {open && (
           <nav className="border-t border-[var(--border)] px-2 py-2">
-            {NAV.map((item) => {
-              const Icon = item.icon;
+            {nav.map((item) => {
+              const Icon = NAV_ICONS[item.href] ?? LayoutDashboard;
               const active = pathname.startsWith(item.href);
               return (
                 <Link
@@ -87,11 +114,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-[var(--border)] py-8 pr-4 lg:flex">
           <div className="mb-10 flex items-center gap-2 px-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)]">
-              <PiggyBank className="h-5 w-5" />
+              <BrandIcon className="h-5 w-5" />
             </div>
-            <div>
-              <p className="font-[family-name:var(--font-display)] text-lg font-semibold leading-none tracking-tight">
-                Finance Tracker
+            <div className="min-w-0">
+              <p className="truncate font-[family-name:var(--font-display)] text-lg font-semibold leading-none tracking-tight">
+                {appearance.appName}
               </p>
               <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 Personal finance
@@ -99,8 +126,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <nav className="flex flex-1 flex-col gap-1">
-            {NAV.map((item) => {
-              const Icon = item.icon;
+            {nav.map((item) => {
+              const Icon = NAV_ICONS[item.href] ?? LayoutDashboard;
               const active = pathname.startsWith(item.href);
               return (
                 <Link

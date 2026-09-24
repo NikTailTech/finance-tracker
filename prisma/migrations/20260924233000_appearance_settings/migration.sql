@@ -1,0 +1,5 @@
+ALTER TABLE "Settings" ADD COLUMN "theme" TEXT NOT NULL DEFAULT 'dark';
+ALTER TABLE "Settings" ADD COLUMN "primaryColor" TEXT NOT NULL DEFAULT '#3dba7e';
+ALTER TABLE "Settings" ADD COLUMN "icon" TEXT NOT NULL DEFAULT 'piggy';
+ALTER TABLE "Settings" ADD COLUMN "appName" TEXT NOT NULL DEFAULT 'Finance Tracker';
+ALTER TABLE "Settings" ADD COLUMN "navOrder" TEXT NOT NULL DEFAULT '';

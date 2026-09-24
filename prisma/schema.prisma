@@ -180,14 +180,20 @@ model Transfer {
   @@index([date])
 }
 
-/// App-wide settings (FX default for net-worth aggregation).
+/// App-wide settings (FX default for net-worth aggregation and appearance).
 model Settings {
-  id             String   @id @default("default")
+  id              String   @id @default("default")
   /// How many CHF for 1 EUR (dashboard FX).
-  eurToChfRate   Decimal  @default(0.95) @db.Decimal(19, 8)
+  eurToChfRate    Decimal  @default(0.95) @db.Decimal(19, 8)
   displayCurrency Currency @default(EUR)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  theme           String   @default("dark")
+  primaryColor    String   @default("#3dba7e")
+  icon            String   @default("piggy")
+  appName         String   @default("Finance Tracker")
+  /// Comma-separated nav hrefs. Empty uses the built-in order.
+  navOrder        String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 // --- Future-ready stubs (commented models can be enabled later) ---

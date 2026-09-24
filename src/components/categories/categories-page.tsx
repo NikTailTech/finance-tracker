@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Check, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { fetchJson, useManagedCategories, type ManagedCategory } from "@/lib/hooks";
 import {
   Card,
@@ -47,6 +47,7 @@ export function CategoriesPage() {
   const [newKind, setNewKind] = useState<ManagedCategory["kind"]>("EXPENSE");
   const [creating, setCreating] = useState(false);
 
+  const [reordering, setReordering] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editKind, setEditKind] = useState<ManagedCategory["kind"]>("EXPENSE");
@@ -158,6 +159,39 @@ export function CategoriesPage() {
       setFormError(e instanceof Error ? e.message : "Failed to delete category");
     } finally {
       setSavingId(null);
+    }
+  }
+
+  async function move(category: ManagedCategory, direction: "up" | "down") {
+    const list = categories.filter((row) => row.kind === category.kind);
+    const index = list.findIndex((row) => row.id === category.id);
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (index < 0 || target < 0 || target >= list.length) return;
+
+    const swapped = [...list];
+    const current = swapped[index];
+    const neighbor = swapped[target];
+    if (!current || !neighbor) return;
+    swapped[index] = neighbor;
+    swapped[target] = current;
+
+    setReordering(true);
+    setFormError(null);
+    setNotice(null);
+    try {
+      await fetchJson("/api/categories/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: category.kind,
+          orderedIds: swapped.map((row) => row.id),
+        }),
+      });
+      await reload();
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : "Failed to reorder");
+    } finally {
+      setReordering(false);
     }
   }
 
@@ -279,6 +313,7 @@ export function CategoriesPage() {
             <table className="w-full border-collapse text-left text-sm">
               <thead className="hidden sm:table-header-group">
                 <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+                  <th className="px-4 py-3 font-medium">Order</th>
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Type</th>
                   <th className="px-4 py-3 font-medium">Usage</th>
@@ -288,14 +323,16 @@ export function CategoriesPage() {
               <tbody>
                 {visible.map((category) => {
                   const editing = editingId === category.id;
-                  const busy = savingId === category.id;
+                  const busy = savingId === category.id || reordering;
+                  const siblings = categories.filter((row) => row.kind === category.kind);
+                  const kindIndex = siblings.findIndex((row) => row.id === category.id);
                   return (
                     <tr
                       key={category.id}
                       className="block border-b border-[var(--border)] last:border-0 sm:table-row"
                     >
                       {editing ? (
-                        <td className="block px-4 py-3 sm:table-cell" colSpan={4}>
+                        <td className="block px-4 py-3 sm:table-cell" colSpan={5}>
                           <div className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
                             <div className="space-y-2">
                               <Label htmlFor={`edit-name-${category.id}`}>Name</Label>
@@ -352,6 +389,32 @@ export function CategoriesPage() {
                         </td>
                       ) : (
                         <>
+                          <td className="block px-4 pt-3 sm:table-cell sm:px-2 sm:py-3">
+                            <div className="flex gap-1">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="h-10 w-10 p-0 touch-manipulation"
+                                disabled={busy || kindIndex <= 0}
+                                aria-label={`Move ${category.name} up`}
+                                onClick={() => void move(category, "up")}
+                              >
+                                <ArrowUp className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="h-10 w-10 p-0 touch-manipulation"
+                                disabled={busy || kindIndex < 0 || kindIndex >= siblings.length - 1}
+                                aria-label={`Move ${category.name} down`}
+                                onClick={() => void move(category, "down")}
+                              >
+                                <ArrowDown className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </td>
                           <td className="block px-4 pt-3 sm:table-cell sm:py-3">
                             <div className="flex items-center gap-2">
                               <span className={cn("font-medium", !category.isActive && "opacity-60")}>
