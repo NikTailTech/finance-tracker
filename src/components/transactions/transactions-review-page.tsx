@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/form";
 import { formatMoney, formatMoneyInput } from "@/lib/money";
@@ -96,6 +97,8 @@ export function TransactionsReviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<Row | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const categoryOptions = useMemo(() => {
     if (filters.type === "EXPENSE") return expenseCategories;
@@ -178,15 +181,19 @@ export function TransactionsReviewPage() {
     });
   }
 
-  async function remove(row: Row) {
-    const kind = row.type === "EXPENSE" ? "expense" : "income";
-    const ok = window.confirm(
-      `Delete this ${kind}?\n\n“${row.title}” · ${formatDate(row.date)}\n\nThis cannot be undone.`,
-    );
-    if (!ok) return;
-    await fetchJson(`/api/transactions/${row.id}`, { method: "DELETE" });
-    if (editRow?.id === row.id) setEditRow(null);
-    await Promise.all([load(), reloadAccounts()]);
+  async function confirmRemove() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await fetchJson(`/api/transactions/${pendingDelete.id}`, {
+        method: "DELETE",
+      });
+      if (editRow?.id === pendingDelete.id) setEditRow(null);
+      setPendingDelete(null);
+      await Promise.all([load(), reloadAccounts()]);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   function startEdit(row: Row) {
@@ -495,7 +502,7 @@ export function TransactionsReviewPage() {
                           variant="ghost"
                           className="touch-manipulation text-[var(--danger)] hover:text-[var(--danger)]"
                           aria-label={`Delete ${row.title}`}
-                          onClick={() => void remove(row)}
+                          onClick={() => setPendingDelete(row)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -508,6 +515,30 @@ export function TransactionsReviewPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onClose={() => {
+          if (!deleting) setPendingDelete(null);
+        }}
+        onConfirm={confirmRemove}
+        title={`Delete ${pendingDelete?.type === "EXPENSE" ? "expense" : "income"}?`}
+        description={
+          pendingDelete ? (
+            <>
+              <span className="font-medium text-[var(--foreground)]">
+                “{pendingDelete.title}”
+              </span>
+              {" · "}
+              {formatDate(pendingDelete.date)}
+              <br />
+              This cannot be undone.
+            </>
+          ) : undefined
+        }
+        confirmLabel={deleting ? "Deleting…" : "Delete"}
+        confirming={deleting}
+      />
     </div>
   );
 }

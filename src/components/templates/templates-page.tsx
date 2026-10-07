@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input, Label, Select, Textarea } from "@/components/ui/form";
 import { formatMoney, formatMoneyInput, formatNumber } from "@/lib/money";
 import { DIVISION_LABELS, cn } from "@/lib/utils";
@@ -47,7 +48,7 @@ function TemplateTable({
   editingId: string | null;
   onApply: (template: TemplateOption) => void;
   onEdit: (template: TemplateOption) => void;
-  onRemove: (id: string) => void;
+  onRemove: (template: TemplateOption) => void;
   onMove: (id: string, direction: "up" | "down") => void;
 }) {
   if (rows.length === 0) {
@@ -148,7 +149,7 @@ function TemplateTable({
                 size="sm"
                 variant="ghost"
                 disabled={reordering}
-                onClick={() => onRemove(template.id)}
+                onClick={() => onRemove(template)}
               >
                 Delete
               </Button>
@@ -259,7 +260,7 @@ function TemplateTable({
                       size="sm"
                       variant="ghost"
                       disabled={reordering}
-                      onClick={() => onRemove(template.id)}
+                      onClick={() => onRemove(template)}
                     >
                       Delete
                     </Button>
@@ -293,6 +294,10 @@ export function TemplatesPage() {
   const [error, setError] = useState<string | null>(null);
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<TemplateOption | null>(
+    null,
+  );
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!editingId) return;
@@ -392,11 +397,20 @@ export function TemplatesPage() {
     }
   }
 
-  async function remove(id: string) {
+  async function confirmRemove() {
+    if (!pendingDelete) return;
+    setDeleting(true);
     setMessage(null);
-    if (editingId === id) resetForm(type);
-    await fetchJson(`/api/templates/${id}`, { method: "DELETE" });
-    await reload();
+    try {
+      if (editingId === pendingDelete.id) resetForm(type);
+      await fetchJson(`/api/templates/${pendingDelete.id}`, {
+        method: "DELETE",
+      });
+      setPendingDelete(null);
+      await reload();
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function applyNow(template: TemplateOption) {
@@ -638,7 +652,7 @@ export function TemplatesPage() {
             editingId={editingId}
             onApply={applyNow}
             onEdit={startEdit}
-            onRemove={(id) => void remove(id)}
+            onRemove={setPendingDelete}
             onMove={(id, direction) => void moveTemplate("INCOME", id, direction)}
           />
         </CardContent>
@@ -656,11 +670,33 @@ export function TemplatesPage() {
             editingId={editingId}
             onApply={applyNow}
             onEdit={startEdit}
-            onRemove={(id) => void remove(id)}
+            onRemove={setPendingDelete}
             onMove={(id, direction) => void moveTemplate("EXPENSE", id, direction)}
           />
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onClose={() => {
+          if (!deleting) setPendingDelete(null);
+        }}
+        onConfirm={confirmRemove}
+        title="Delete this template?"
+        description={
+          pendingDelete ? (
+            <>
+              <span className="font-medium text-[var(--foreground)]">
+                “{pendingDelete.name}”
+              </span>
+              <br />
+              This cannot be undone.
+            </>
+          ) : undefined
+        }
+        confirmLabel={deleting ? "Deleting…" : "Delete"}
+        confirming={deleting}
+      />
     </div>
   );
 }

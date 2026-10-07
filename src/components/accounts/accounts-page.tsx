@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Badge, Input, Label, Select } from "@/components/ui/form";
 import { formatMoney } from "@/lib/money";
 import { DIVISION_LABELS } from "@/lib/utils";
@@ -312,57 +313,40 @@ export function AccountsPage() {
         })}
       </div>
 
-      {pendingDelete ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-account-title"
-            className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[var(--shadow)]"
-          >
-            <h2
-              id="delete-account-title"
-              className="font-[family-name:var(--font-display)] text-xl font-semibold"
-            >
-              Delete {pendingDelete.name}
-            </h2>
-            <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-              Expenses and income on this account are deleted. Changes stay:
-              whichever side used this account is shown as ACCOUNT DELETED.
-            </p>
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="confirm-account-name">
-                Type <span className="font-medium text-[var(--foreground)]">{pendingDelete.name}</span> to confirm
-              </Label>
-              <Input
-                id="confirm-account-name"
-                autoFocus
-                value={confirmName}
-                onChange={(e) => setConfirmName(e.target.value)}
-                placeholder={pendingDelete.name}
-              />
-            </div>
-            {formError ? (
-              <p className="mt-3 text-sm text-[var(--danger)]">{formError}</p>
-            ) : null}
-            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button type="button" variant="ghost" onClick={closeDelete}>
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                disabled={
-                  confirmName !== pendingDelete.name || savingId === pendingDelete.id
-                }
-                onClick={() => void removeAccount()}
-              >
-                {savingId === pendingDelete.id ? "Deleting…" : "Delete account"}
-              </Button>
-            </div>
-          </div>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onClose={closeDelete}
+        onConfirm={removeAccount}
+        title={pendingDelete ? `Delete ${pendingDelete.name}` : "Delete account"}
+        description="Expenses and income on this account are deleted. Changes stay: whichever side used this account is shown as ACCOUNT DELETED."
+        confirmLabel={
+          savingId === pendingDelete?.id ? "Deleting…" : "Delete account"
+        }
+        confirming={savingId === pendingDelete?.id}
+        confirmDisabled={
+          !pendingDelete || confirmName !== pendingDelete.name
+        }
+      >
+        <div className="space-y-2">
+          <Label htmlFor="confirm-account-name">
+            Type{" "}
+            <span className="font-medium text-[var(--foreground)]">
+              {pendingDelete?.name}
+            </span>{" "}
+            to confirm
+          </Label>
+          <Input
+            id="confirm-account-name"
+            autoFocus
+            value={confirmName}
+            onChange={(e) => setConfirmName(e.target.value)}
+            placeholder={pendingDelete?.name}
+          />
+          {formError ? (
+            <p className="text-sm text-[var(--danger)]">{formError}</p>
+          ) : null}
         </div>
-      ) : null}
+      </ConfirmDialog>
     </div>
   );
 }

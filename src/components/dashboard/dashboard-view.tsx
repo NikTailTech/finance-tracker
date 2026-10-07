@@ -9,13 +9,28 @@ import {
   Tooltip,
 } from "recharts";
 import { DateInput } from "@/components/ui/date-input";
-import { Label } from "@/components/ui/form";
+import { Label, Select } from "@/components/ui/form";
 import { formatMoney, formatNumber } from "@/lib/money";
 import { DIVISION_LABELS, cn } from "@/lib/utils";
 import { fetchJson } from "@/lib/hooks";
 import { InvestmentsAllocationSection } from "@/components/dashboard/investments-allocation-card";
 import type { WealthAllocationSegment } from "@/lib/wealth-allocation";
 import { thisMonthDateRange } from "@/lib/review-dates";
+
+type DisplayCurrency = "EUR" | "CHF";
+
+/** Convert a dual-currency total into one display currency via EUR→CHF rate. */
+function convertDualCurrency(
+  amounts: { EUR: string; CHF: string },
+  to: DisplayCurrency,
+  eurToChfRate: number,
+) {
+  const eur = Number(amounts.EUR) || 0;
+  const chf = Number(amounts.CHF) || 0;
+  const rate = eurToChfRate > 0 ? eurToChfRate : 0.95;
+  if (to === "EUR") return eur + chf / rate;
+  return eur * rate + chf;
+}
 
 type DashboardData = {
   netWorth: {
@@ -127,6 +142,7 @@ export function DashboardView() {
   const [to, setTo] = useState(month.to);
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [flowCurrency, setFlowCurrency] = useState<DisplayCurrency | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -138,6 +154,7 @@ export function DashboardView() {
         qs ? `/api/dashboard?${qs}` : "/api/dashboard",
       );
       setData(summary);
+      setFlowCurrency((prev) => prev ?? summary.netWorth.currency);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load dashboard");
@@ -148,14 +165,24 @@ export function DashboardView() {
     void load();
   }, [load]);
 
+  const displayCurrency: DisplayCurrency = flowCurrency ?? "EUR";
+  const eurToChfRate = Number(data?.netWorth.eurToChfRate) || 0.95;
+
+  const incomeTotal = useMemo(() => {
+    if (!data) return 0;
+    return convertDualCurrency(data.income, displayCurrency, eurToChfRate);
+  }, [data, displayCurrency, eurToChfRate]);
+
+  const expensesTotal = useMemo(() => {
+    if (!data) return 0;
+    return convertDualCurrency(data.expenses, displayCurrency, eurToChfRate);
+  }, [data, displayCurrency, eurToChfRate]);
+
   const expensePieData = useMemo(() => {
     if (!data) return [];
-    const rate = Number(data.netWorth.eurToChfRate) || 0.95;
     return data.expensesByCategory
       .map((row, index) => {
-        const eur = Number(row.EUR) || 0;
-        const chf = Number(row.CHF) || 0;
-        const value = eur + (rate > 0 ? chf / rate : 0);
+        const value = convertDualCurrency(row, displayCurrency, eurToChfRate);
         return {
           id: row.categoryId,
           name: row.name,
@@ -167,7 +194,7 @@ export function DashboardView() {
       })
       .filter((row) => row.value > 0)
       .sort((a, b) => b.value - a.value);
-  }, [data]);
+  }, [data, displayCurrency, eurToChfRate]);
 
   if (error) {
     return (
@@ -270,9 +297,9 @@ export function DashboardView() {
       {/* Income / Outcome with date filter */}
       <Section
         title="Income & expenses"
-        description="Totals for the selected period (default: this month)."
+        description="Totals for the selected period (default: this month), converted with the EUR→CHF rate."
         action={
-          <div className="grid grid-cols-2 gap-2 sm:w-[22rem]">
+          <div className="grid grid-cols-2 gap-2 sm:w-[28rem] sm:grid-cols-[1fr_1fr_5.5rem]">
             <div className="space-y-1">
               <Label
                 htmlFor="dash-from"
@@ -301,6 +328,25 @@ export function DashboardView() {
                 onChange={setTo}
               />
             </div>
+            <div className="col-span-2 space-y-1 sm:col-span-1">
+              <Label
+                htmlFor="dash-currency"
+                className="text-xs text-[var(--muted-foreground)]"
+              >
+                Currency
+              </Label>
+              <Select
+                id="dash-currency"
+                className="h-9"
+                value={displayCurrency}
+                onChange={(e) =>
+                  setFlowCurrency(e.target.value as DisplayCurrency)
+                }
+              >
+                <option value="EUR">EUR</option>
+                <option value="CHF">CHF</option>
+              </Select>
+            </div>
           </div>
         }
       >
@@ -310,10 +356,7 @@ export function DashboardView() {
               Income
             </p>
             <p className="mt-2 font-[family-name:var(--font-display)] text-xl font-semibold tabular-nums text-[var(--success)] sm:text-2xl">
-              {formatMoney(data.income.EUR, "EUR")}
-            </p>
-            <p className="mt-1 text-sm tabular-nums text-[var(--muted-foreground)]">
-              {formatMoney(data.income.CHF, "CHF")}
+              {formatMoney(incomeTotal, displayCurrency)}
             </p>
           </div>
           <div className="min-w-0 border-l border-[var(--border)] pl-6 sm:pl-10">
@@ -321,10 +364,7 @@ export function DashboardView() {
               Expenses
             </p>
             <p className="mt-2 font-[family-name:var(--font-display)] text-xl font-semibold tabular-nums text-[var(--danger)] sm:text-2xl">
-              {formatMoney(data.expenses.EUR, "EUR")}
-            </p>
-            <p className="mt-1 text-sm tabular-nums text-[var(--muted-foreground)]">
-              {formatMoney(data.expenses.CHF, "CHF")}
+              {formatMoney(expensesTotal, displayCurrency)}
             </p>
           </div>
         </div>
@@ -339,7 +379,7 @@ export function DashboardView() {
       {/* Expenses by category pie */}
       <Section
         title="Expenses by category"
-        description="Selected period, amounts converted to EUR for the chart."
+        description={`Selected period, amounts converted to ${displayCurrency} for the chart.`}
       >
         <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
           <div className="mx-auto h-52 w-full max-w-xs sm:h-64 sm:max-w-sm lg:mx-0">
@@ -371,7 +411,7 @@ export function DashboardView() {
                   <Tooltip
                     formatter={(value) =>
                       typeof value === "number"
-                        ? formatMoney(value, "EUR")
+                        ? formatMoney(value, displayCurrency)
                         : String(value ?? "")
                     }
                     contentStyle={{
@@ -407,13 +447,10 @@ export function DashboardView() {
                     </div>
                     <div className="shrink-0 text-right tabular-nums">
                       <p className="text-sm font-medium">
-                        {formatMoney(row.value, "EUR")}
+                        {formatMoney(row.value, displayCurrency)}
                       </p>
                       <p className="text-xs text-[var(--muted-foreground)]">
                         {formatNumber(share, 1)}%
-                        {Number(row.CHF) > 0
-                          ? ` · ${formatMoney(row.CHF, "CHF")}`
-                          : ""}
                       </p>
                     </div>
                   </li>

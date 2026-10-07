@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/form";
 import { formatMoney } from "@/lib/money";
@@ -40,6 +41,8 @@ export function ChangePage() {
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [formNonce, setFormNonce] = useState(0);
+  const [pendingDelete, setPendingDelete] = useState<Row | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -64,13 +67,18 @@ export function ChangePage() {
     setFormOpen(false);
   }
 
-  async function remove(id: string) {
-    const ok = window.confirm(
-      "Delete this change?\n\nThis cannot be undone.",
-    );
-    if (!ok) return;
-    await fetchJson(`/api/transfers/${id}`, { method: "DELETE" });
-    await Promise.all([load(), reloadAccounts()]);
+  async function confirmRemove() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await fetchJson(`/api/transfers/${pendingDelete.id}`, {
+        method: "DELETE",
+      });
+      setPendingDelete(null);
+      await Promise.all([load(), reloadAccounts()]);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -152,7 +160,7 @@ export function ChangePage() {
                   variant="ghost"
                   className="touch-manipulation text-[var(--danger)] hover:text-[var(--danger)]"
                   aria-label={`Delete ${row.title}`}
-                  onClick={() => void remove(row.id)}
+                  onClick={() => setPendingDelete(row)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
@@ -161,6 +169,30 @@ export function ChangePage() {
           ))}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onClose={() => {
+          if (!deleting) setPendingDelete(null);
+        }}
+        onConfirm={confirmRemove}
+        title="Delete this change?"
+        description={
+          pendingDelete ? (
+            <>
+              <span className="font-medium text-[var(--foreground)]">
+                “{pendingDelete.title}”
+              </span>
+              {" · "}
+              {formatDate(pendingDelete.date)}
+              <br />
+              This cannot be undone.
+            </>
+          ) : undefined
+        }
+        confirmLabel={deleting ? "Deleting…" : "Delete"}
+        confirming={deleting}
+      />
     </div>
   );
 }

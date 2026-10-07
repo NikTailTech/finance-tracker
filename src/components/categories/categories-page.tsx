@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Badge, Input, Label, Select } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +49,9 @@ export function CategoriesPage() {
   const [creating, setCreating] = useState(false);
 
   const [reordering, setReordering] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<ManagedCategory | null>(
+    null,
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editKind, setEditKind] = useState<ManagedCategory["kind"]>("EXPENSE");
@@ -133,15 +137,9 @@ export function CategoriesPage() {
     }
   }
 
-  async function remove(category: ManagedCategory) {
-    const inUse = category.transactionCount > 0 || category.templateCount > 0;
-    const confirmed = window.confirm(
-      inUse
-        ? `"${category.name}" is used by existing records. It will be hidden from new transactions. Existing entries stay linked.`
-        : `Delete "${category.name}"?`,
-    );
-    if (!confirmed) return;
-
+  async function confirmRemove() {
+    if (!pendingDelete) return;
+    const category = pendingDelete;
     setSavingId(category.id);
     setFormError(null);
     setNotice(null);
@@ -151,9 +149,12 @@ export function CategoriesPage() {
         { method: "DELETE" },
       );
       if (result.mode === "deactivated") {
-        setNotice(`"${category.name}" is hidden. Restore it anytime from this list.`);
+        setNotice(
+          `"${category.name}" is hidden. Restore it anytime from this list.`,
+        );
       }
       if (editingId === category.id) setEditingId(null);
+      setPendingDelete(null);
       await reload();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : "Failed to delete category");
@@ -460,7 +461,7 @@ export function CategoriesPage() {
                                   variant="ghost"
                                   className="min-h-10 flex-1 touch-manipulation sm:flex-none"
                                   disabled={busy}
-                                  onClick={() => void remove(category)}
+                                  onClick={() => setPendingDelete(category)}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                   Delete
@@ -490,6 +491,36 @@ export function CategoriesPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onClose={() => {
+          if (savingId !== pendingDelete?.id) setPendingDelete(null);
+        }}
+        onConfirm={confirmRemove}
+        title={
+          pendingDelete &&
+          (pendingDelete.transactionCount > 0 || pendingDelete.templateCount > 0)
+            ? `Hide “${pendingDelete.name}”?`
+            : `Delete “${pendingDelete?.name ?? "category"}”?`
+        }
+        description={
+          pendingDelete &&
+          (pendingDelete.transactionCount > 0 || pendingDelete.templateCount > 0)
+            ? "This category is used by existing records. It will be hidden from new transactions. Existing entries stay linked."
+            : "This cannot be undone."
+        }
+        confirmLabel={
+          savingId === pendingDelete?.id
+            ? "Working…"
+            : pendingDelete &&
+                (pendingDelete.transactionCount > 0 ||
+                  pendingDelete.templateCount > 0)
+              ? "Hide category"
+              : "Delete"
+        }
+        confirming={savingId === pendingDelete?.id}
+      />
     </div>
   );
 }
