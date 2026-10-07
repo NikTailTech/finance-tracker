@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { NAV_HREFS, resolveNavOrder } from "@/lib/appearance";
+import { resolveDateFormat } from "@/lib/date-format";
 import { serializeRate, toDecimal } from "@/lib/money";
 import { settingsUpdateSchema } from "@/lib/schemas";
 import { handleApiError, jsonError, jsonOk } from "@/lib/api";
@@ -17,6 +18,7 @@ function serializeSettings(settings: {
   icon: string;
   appName: string;
   navOrder: string;
+  dateFormat: string;
 }) {
   return {
     id: settings.id,
@@ -27,6 +29,7 @@ function serializeSettings(settings: {
     icon: settings.icon,
     appName: settings.appName,
     navOrder: resolveNavOrder(settings.navOrder),
+    dateFormat: resolveDateFormat(settings.dateFormat),
   };
 }
 
@@ -57,31 +60,30 @@ export async function PATCH(request: Request) {
       }
     }
 
+    const data: {
+      eurToChfRate?: string;
+      displayCurrency?: "EUR" | "CHF";
+      theme?: string;
+      primaryColor?: string;
+      icon?: string;
+      appName?: string;
+      navOrder?: string;
+      dateFormat?: string;
+    } = {};
+
+    if (body.eurToChfRate) data.eurToChfRate = rateForDb(body.eurToChfRate);
+    if (body.displayCurrency) data.displayCurrency = body.displayCurrency;
+    if (body.theme) data.theme = body.theme;
+    if (body.primaryColor) data.primaryColor = body.primaryColor;
+    if (body.icon) data.icon = body.icon;
+    if (body.appName) data.appName = body.appName;
+    if (body.navOrder) data.navOrder = body.navOrder.join(",");
+    if (body.dateFormat) data.dateFormat = body.dateFormat;
+
     const settings = await prisma.settings.upsert({
       where: { id: "default" },
-      update: {
-        eurToChfRate: body.eurToChfRate
-          ? rateForDb(body.eurToChfRate)
-          : undefined,
-        displayCurrency: body.displayCurrency,
-        theme: body.theme,
-        primaryColor: body.primaryColor,
-        icon: body.icon,
-        appName: body.appName,
-        navOrder: body.navOrder ? body.navOrder.join(",") : undefined,
-      },
-      create: {
-        id: "default",
-        eurToChfRate: body.eurToChfRate
-          ? rateForDb(body.eurToChfRate)
-          : undefined,
-        displayCurrency: body.displayCurrency,
-        theme: body.theme,
-        primaryColor: body.primaryColor,
-        icon: body.icon,
-        appName: body.appName,
-        navOrder: body.navOrder ? body.navOrder.join(",") : undefined,
-      },
+      update: data,
+      create: { id: "default", ...data },
     });
     return jsonOk(serializeSettings(settings));
   } catch (error) {

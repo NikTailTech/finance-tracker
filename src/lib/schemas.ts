@@ -288,6 +288,9 @@ export const settingsUpdateSchema = z.object({
   icon: z.enum(["piggy", "wallet", "coins", "landmark", "banknote", "gem"]).optional(),
   appName: z.string().trim().min(1).max(40).optional(),
   navOrder: z.array(z.string().min(1)).optional(),
+  dateFormat: z
+    .enum(["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD", "DD.MM.YYYY"])
+    .optional(),
 });
 
 export type TransactionCreateInput = z.infer<typeof transactionCreateSchema>;

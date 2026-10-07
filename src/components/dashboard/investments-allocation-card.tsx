@@ -85,34 +85,35 @@ export function InvestmentsAllocationSection({
             Allocation
           </h2>
           <p className="text-sm text-[var(--muted-foreground)]">
-            Checking, cash and assets in CHF. Crypto API values are usually CHF.
+            Accounts today; crypto and investments will plug in here later.
+            Chart in CHF.
           </p>
         </div>
         <div className="min-w-0 sm:text-right">
           <p className="text-xs uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
-            External portfolio
+            External (crypto / invest)
           </p>
           <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums">
             {formatMoney(investments.totals.CHF, "CHF")}
           </p>
           <p className="text-xs tabular-nums text-[var(--muted-foreground)]">
-            EUR {formatMoney(investments.totals.EUR, "EUR")}
-            {" · "}
-            envelopes {formatMoney(investments.envelope.CHF, "CHF")}
+            Placeholder until APIs are connected
           </p>
         </div>
       </header>
 
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--muted-foreground)]">
-        {investments.sources.map((source) => (
-          <p key={source.id}>
-            <span className="text-[var(--foreground)]">{source.label}</span>
-            {": "}
-            {formatMoney(source.amount, source.currency)}
-            {source.status === "disconnected" ? " · offline" : null}
-          </p>
-        ))}
-      </div>
+      {investments.sources.some((source) => source.status !== "disconnected") ? (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--muted-foreground)]">
+          {investments.sources.map((source) => (
+            <p key={source.id}>
+              <span className="text-[var(--foreground)]">{source.label}</span>
+              {": "}
+              {formatMoney(source.amount, source.currency)}
+              {source.status === "disconnected" ? " · offline" : null}
+            </p>
+          ))}
+        </div>
+      ) : null}
 
       <div className="grid min-w-0 gap-6 border-t border-[var(--border)] pt-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
         <div className="mx-auto h-52 w-full max-w-xs sm:h-64 sm:max-w-sm lg:mx-0">

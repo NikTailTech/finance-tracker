@@ -74,6 +74,7 @@ docker compose up --build
 - App: `http://localhost:3000`
 - Postgres volume: `finance_tracker_pg`
 - Entrypoint runs `prisma migrate deploy` + seed, then `node server.js`
+- Seed is create-only: default accounts are inserted only when the DB has zero accounts (never rewrites renamed/deleted ones)
 
 ## Kubernetes
 

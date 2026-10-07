@@ -8,6 +8,11 @@ import {
   useState,
 } from "react";
 import { primaryVars, type AppTheme } from "@/lib/appearance";
+import {
+  formatDisplayDate,
+  resolveDateFormat,
+  type DateFormat,
+} from "@/lib/date-format";
 
 export type AppearanceState = {
   theme: AppTheme;
@@ -17,6 +22,7 @@ export type AppearanceState = {
   navOrder: string[];
   displayCurrency: "EUR" | "CHF";
   eurToChfRate: string;
+  dateFormat: DateFormat;
 };
 
 const AppearanceContext = createContext<{
@@ -92,6 +98,13 @@ export function useAppearance() {
     throw new Error("useAppearance must be used within AppearanceProvider");
   }
   return context;
+}
+
+/** Format ISO dates (`YYYY-MM-DD`) using the user’s Settings preference. */
+export function useFormatDate() {
+  const { appearance } = useAppearance();
+  const format = resolveDateFormat(appearance.dateFormat);
+  return (iso: string | null | undefined) => formatDisplayDate(iso, format);
 }
 
 export { resolvedTheme };

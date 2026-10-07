@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { Input, Label, Select, Textarea } from "@/components/ui/form";
 import { DIVISION_LABELS } from "@/lib/utils";
 import { AccountOption, fetchJson } from "@/lib/hooks";
@@ -9,9 +10,10 @@ import { AccountOption, fetchJson } from "@/lib/hooks";
 type Props = {
   accounts: AccountOption[];
   onCreated: () => void;
+  onCancel?: () => void;
 };
 
-export function TransferForm({ accounts, onCreated }: Props) {
+export function TransferForm({ accounts, onCreated, onCancel }: Props) {
   const [kind, setKind] = useState<"ACCOUNT" | "DIVISION" | "CONVERSION">(
     "ACCOUNT",
   );
@@ -121,12 +123,11 @@ export function TransferForm({ accounts, onCreated }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="date">Date</Label>
-        <Input
+        <DateInput
           id="date"
-          type="date"
           required
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={setDate}
         />
       </div>
 
@@ -246,8 +247,23 @@ export function TransferForm({ accounts, onCreated }: Props) {
         <p className="md:col-span-2 text-sm text-[var(--danger)]">{error}</p>
       )}
 
-      <div className="md:col-span-2">
-        <Button type="submit" disabled={saving}>
+      <div className="flex flex-col gap-2 sm:flex-row md:col-span-2">
+        {onCancel ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-10 w-full touch-manipulation sm:w-auto"
+            disabled={saving}
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+        ) : null}
+        <Button
+          type="submit"
+          className="min-h-10 w-full touch-manipulation sm:w-auto"
+          disabled={saving}
+        >
           {saving ? "Saving…" : "Record change"}
         </Button>
       </div>

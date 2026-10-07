@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { Input, Label, Select, Textarea } from "@/components/ui/form";
 import { DIVISION_LABELS } from "@/lib/utils";
 import { AccountOption, CategoryOption, fetchJson } from "@/lib/hooks";
@@ -218,12 +219,11 @@ export function TransactionForm({
 
       <div className="space-y-2">
         <Label htmlFor="date">Date</Label>
-        <Input
+        <DateInput
           id="date"
-          type="date"
           required
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={setDate}
         />
       </div>
 
@@ -324,7 +324,7 @@ export function TransactionForm({
       )}
 
       <div className="flex flex-col gap-2 sm:flex-row md:col-span-2">
-        {isEditing ? (
+        {onCancelEdit ? (
           <Button
             type="button"
             variant="outline"
@@ -332,7 +332,7 @@ export function TransactionForm({
             disabled={saving}
             onClick={() => {
               resetForCreate();
-              onCancelEdit?.();
+              onCancelEdit();
             }}
           >
             Cancel

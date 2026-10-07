@@ -1,4 +1,5 @@
 import { resolveNavOrder, type AppTheme } from "@/lib/appearance";
+import { DEFAULT_DATE_FORMAT, resolveDateFormat } from "@/lib/date-format";
 import { serializeRate } from "@/lib/money";
 import type { AppearanceState } from "@/components/layout/appearance";
 
@@ -11,6 +12,7 @@ function defaultAppearance(): AppearanceState {
     navOrder: resolveNavOrder(""),
     displayCurrency: "EUR",
     eurToChfRate: serializeRate("0.95"),
+    dateFormat: DEFAULT_DATE_FORMAT,
   };
 }
 
@@ -39,5 +41,6 @@ export async function loadAppearance(): Promise<AppearanceState> {
     navOrder: resolveNavOrder(settings.navOrder),
     displayCurrency: settings.displayCurrency,
     eurToChfRate: serializeRate(settings.eurToChfRate),
+    dateFormat: resolveDateFormat(settings.dateFormat),
   };
 }

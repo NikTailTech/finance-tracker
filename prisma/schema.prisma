@@ -192,6 +192,8 @@ model Settings {
   appName         String   @default("Finance Tracker")
   /// Comma-separated nav hrefs. Empty uses the built-in order.
   navOrder        String   @default("")
+  /// Display format for dates in the UI (storage stays ISO YYYY-MM-DD).
+  dateFormat      String   @default("DD/MM/YYYY")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

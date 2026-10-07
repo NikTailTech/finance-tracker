@@ -29,6 +29,11 @@ import {
   type AppIcon,
   type AppTheme,
 } from "@/lib/appearance";
+import {
+  DATE_FORMAT_OPTIONS,
+  resolveDateFormat,
+  type DateFormat,
+} from "@/lib/date-format";
 import { fetchJson } from "@/lib/hooks";
 import { formatMoneyInput } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -47,6 +52,7 @@ export function SettingsPage() {
   const [draft, setDraft] = useState<AppearanceState>({
     ...appearance,
     eurToChfRate: formatMoneyInput(appearance.eurToChfRate, 8),
+    dateFormat: resolveDateFormat(appearance.dateFormat),
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +93,7 @@ export function SettingsPage() {
           navOrder: draft.navOrder,
           displayCurrency: draft.displayCurrency,
           eurToChfRate: draft.eurToChfRate,
+          dateFormat: draft.dateFormat,
         }),
       });
       const next = {
@@ -112,7 +119,7 @@ export function SettingsPage() {
           Settings
         </h1>
         <p className="mt-1 text-[var(--muted-foreground)]">
-          Appearance, navigation, and how amounts are shown.
+          Appearance, navigation, dates, and how amounts are shown.
         </p>
       </div>
 
@@ -262,6 +269,34 @@ export function SettingsPage() {
               </div>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Locale</CardTitle>
+          <CardDescription>
+            How dates appear in lists, filters, and forms. The calendar icon
+            still opens the system picker.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="date-format">Date format</Label>
+            <Select
+              id="date-format"
+              value={draft.dateFormat}
+              onChange={(e) =>
+                patch("dateFormat", e.target.value as DateFormat)
+              }
+            >
+              {DATE_FORMAT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} — e.g. {option.example}
+                </option>
+              ))}
+            </Select>
+          </div>
         </CardContent>
       </Card>
 

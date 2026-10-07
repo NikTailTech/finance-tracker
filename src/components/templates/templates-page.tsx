@@ -21,6 +21,7 @@ import {
   TemplateOption,
   useTemplates,
 } from "@/lib/templates";
+import { useFormatDate } from "@/components/layout/appearance";
 
 function templateAmountLabel(template: TemplateOption) {
   if (!template.amount) return "—";
@@ -274,6 +275,7 @@ function TemplateTable({
 }
 
 export function TemplatesPage() {
+  const formatDate = useFormatDate();
   const { accounts } = useAccounts();
   const [type, setType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const { categories } = useCategories(type);
@@ -419,7 +421,7 @@ export function TemplatesPage() {
         templateName: string;
       }>(`/api/templates/${template.id}/apply`, { method: "POST" });
       setMessage(
-        `Created “${result.templateName}” with date ${result.appliedDate}.`,
+        `Created “${result.templateName}” with date ${formatDate(result.appliedDate)}.`,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to apply template");

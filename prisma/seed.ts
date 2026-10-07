@@ -38,6 +38,7 @@ const INCOME_CATEGORIES = [
 ];
 
 async function main() {
+  // Settings: create once, never overwrite user changes.
   await prisma.settings.upsert({
     where: { id: "default" },
     update: {},
@@ -48,41 +49,41 @@ async function main() {
     },
   });
 
-  for (const account of ACCOUNTS) {
-    const created = await prisma.account.upsert({
-      where: { name: account.name },
-      update: {
-        currency: account.currency,
-        kind: account.kind,
-        sortOrder: account.sortOrder,
-        isActive: true,
-      },
-      create: {
-        name: account.name,
-        currency: account.currency,
-        kind: account.kind,
-        sortOrder: account.sortOrder,
-      },
-    });
-
-    for (const type of DIVISIONS) {
-      await prisma.accountDivision.upsert({
-        where: {
-          accountId_type: { accountId: created.id, type },
-        },
-        update: {},
-        create: {
-          accountId: created.id,
-          type,
+  // Accounts: only bootstrap when the ledger is empty.
+  // Never recreate/reactivate defaults after the user renamed or deleted them.
+  const accountCount = await prisma.account.count();
+  if (accountCount === 0) {
+    for (const account of ACCOUNTS) {
+      const created = await prisma.account.create({
+        data: {
+          name: account.name,
+          currency: account.currency,
+          kind: account.kind,
+          sortOrder: account.sortOrder,
         },
       });
+
+      for (const type of DIVISIONS) {
+        await prisma.accountDivision.create({
+          data: {
+            accountId: created.id,
+            type,
+          },
+        });
+      }
     }
+    console.log("Seed: created default accounts + divisions.");
+  } else {
+    console.log(
+      `Seed: skipped accounts (${accountCount} already present).`,
+    );
   }
 
+  // Categories: create missing defaults only — never force isActive/sortOrder.
   for (const [index, name] of EXPENSE_CATEGORIES.entries()) {
     await prisma.category.upsert({
       where: { name_kind: { name, kind: CategoryKind.EXPENSE } },
-      update: { sortOrder: index, isActive: true },
+      update: {},
       create: { name, kind: CategoryKind.EXPENSE, sortOrder: index },
     });
   }
@@ -90,12 +91,12 @@ async function main() {
   for (const [index, name] of INCOME_CATEGORIES.entries()) {
     await prisma.category.upsert({
       where: { name_kind: { name, kind: CategoryKind.INCOME } },
-      update: { sortOrder: index, isActive: true },
+      update: {},
       create: { name, kind: CategoryKind.INCOME, sortOrder: index },
     });
   }
 
-  console.log("Seed complete: accounts, divisions, categories, settings.");
+  console.log("Seed complete.");
 }
 
 main()

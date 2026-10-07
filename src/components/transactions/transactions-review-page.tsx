@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import {
   Card,
@@ -10,6 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
+import { Dialog } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/form";
 import { formatMoney, formatMoneyInput } from "@/lib/money";
 import {
@@ -19,6 +22,7 @@ import {
 } from "@/lib/review-dates";
 import { DIVISION_LABELS } from "@/lib/utils";
 import { fetchJson, useAccounts, useCategories } from "@/lib/hooks";
+import { useFormatDate } from "@/components/layout/appearance";
 
 type TxType = "EXPENSE" | "INCOME";
 
@@ -82,6 +86,7 @@ function buildQuery(filters: FilterState) {
 }
 
 export function TransactionsReviewPage() {
+  const formatDate = useFormatDate();
   const { accounts, reload: reloadAccounts } = useAccounts();
   const { categories: expenseCategories } = useCategories("EXPENSE");
   const { categories: incomeCategories } = useCategories("INCOME");
@@ -176,7 +181,7 @@ export function TransactionsReviewPage() {
   async function remove(row: Row) {
     const kind = row.type === "EXPENSE" ? "expense" : "income";
     const ok = window.confirm(
-      `Delete this ${kind}?\n\n“${row.title}” · ${row.date}\n\nThis cannot be undone.`,
+      `Delete this ${kind}?\n\n“${row.title}” · ${formatDate(row.date)}\n\nThis cannot be undone.`,
     );
     if (!ok) return;
     await fetchJson(`/api/transactions/${row.id}`, { method: "DELETE" });
@@ -186,11 +191,10 @@ export function TransactionsReviewPage() {
 
   function startEdit(row: Row) {
     setEditRow(row);
-    queueMicrotask(() => {
-      document
-        .getElementById("review-edit-form")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+  }
+
+  function closeEdit() {
+    setEditRow(null);
   }
 
   const editCategories =
@@ -255,20 +259,18 @@ export function TransactionsReviewPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="filter-from">From</Label>
-              <Input
+              <DateInput
                 id="filter-from"
-                type="date"
                 value={filters.from}
-                onChange={(e) => patchFilter("from", e.target.value)}
+                onChange={(iso) => patchFilter("from", iso)}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="filter-to">To</Label>
-              <Input
+              <DateInput
                 id="filter-to"
-                type="date"
                 value={filters.to}
-                onChange={(e) => patchFilter("to", e.target.value)}
+                onChange={(iso) => patchFilter("to", iso)}
               />
             </div>
             <div className="space-y-1.5">
@@ -367,38 +369,40 @@ export function TransactionsReviewPage() {
         </CardContent>
       </Card>
 
-      {editRow ? (
-        <Card id="review-edit-form" className="min-w-0">
-          <CardHeader>
-            <CardTitle className="text-lg">
-              Edit {editRow.type === "EXPENSE" ? "expense" : "income"}
-            </CardTitle>
-            <CardDescription>{editRow.title}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TransactionForm
-              type={editRow.type}
-              accounts={accounts}
-              categories={editCategories}
-              editId={editRow.id}
-              editValues={{
-                title: editRow.title,
-                notes: editRow.notes ?? "",
-                date: editRow.date,
-                amount: formatMoneyInput(editRow.amount),
-                accountId: editRow.accountId,
-                divisionId: editRow.divisionId,
-                categoryId: editRow.categoryId,
-              }}
-              onCancelEdit={() => setEditRow(null)}
-              onCreated={async () => {
-                setEditRow(null);
-                await Promise.all([load(), reloadAccounts()]);
-              }}
-            />
-          </CardContent>
-        </Card>
-      ) : null}
+      <Dialog
+        open={Boolean(editRow)}
+        onClose={closeEdit}
+        title={
+          editRow
+            ? `Edit ${editRow.type === "EXPENSE" ? "expense" : "income"}`
+            : "Edit"
+        }
+        description={editRow?.title}
+      >
+        {editRow ? (
+          <TransactionForm
+            key={editRow.id}
+            type={editRow.type}
+            accounts={accounts}
+            categories={editCategories}
+            editId={editRow.id}
+            editValues={{
+              title: editRow.title,
+              notes: editRow.notes ?? "",
+              date: editRow.date,
+              amount: formatMoneyInput(editRow.amount),
+              accountId: editRow.accountId,
+              divisionId: editRow.divisionId,
+              categoryId: editRow.categoryId,
+            }}
+            onCancelEdit={closeEdit}
+            onCreated={async () => {
+              closeEdit();
+              await Promise.all([load(), reloadAccounts()]);
+            }}
+          />
+        ) : null}
+      </Dialog>
 
       <Card className="min-w-0">
         <CardHeader className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -441,7 +445,9 @@ export function TransactionsReviewPage() {
                     key={row.id}
                     className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/20"
                   >
-                    <td className="whitespace-nowrap px-4 py-3 tabular-nums">{row.date}</td>
+                    <td className="whitespace-nowrap px-4 py-3 tabular-nums">
+                      {formatDate(row.date)}
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={
@@ -472,24 +478,26 @@ export function TransactionsReviewPage() {
                       {formatMoney(row.amount, row.currency)}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right">
-                      <div className="inline-flex gap-1">
+                      <div className="inline-flex items-center gap-0.5">
                         <Button
                           type="button"
-                          size="sm"
-                          variant="outline"
-                          className="min-h-8 touch-manipulation"
+                          size="icon"
+                          variant="ghost"
+                          className="touch-manipulation"
+                          aria-label={`Edit ${row.title}`}
                           onClick={() => startEdit(row)}
                         >
-                          Edit
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           type="button"
-                          size="sm"
+                          size="icon"
                           variant="ghost"
-                          className="min-h-8 touch-manipulation"
+                          className="touch-manipulation text-[var(--danger)] hover:text-[var(--danger)]"
+                          aria-label={`Delete ${row.title}`}
                           onClick={() => void remove(row)}
                         >
-                          Delete
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </td>
