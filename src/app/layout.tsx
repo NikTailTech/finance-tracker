@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const appearance = await loadAppearance();
-  const icon = `/api/favicon?icon=${encodeURIComponent(appearance.icon)}&color=${encodeURIComponent(appearance.primaryColor)}`;
+  const icon = `/api/favicon?color=${encodeURIComponent(appearance.primaryColor)}`;
   return {
     title: appearance.appName,
     description: "Personal finance tracker for EUR, CHF, and cash envelopes",

@@ -40,6 +40,18 @@ enum TransferKind {
   CONVERSION
 }
 
+enum DebtDirection {
+  /// Someone owes me money.
+  OWED_TO_ME
+  /// I owe someone money.
+  I_OWE
+}
+
+enum DebtStatus {
+  OPEN
+  SETTLED
+}
+
 /// Bank or cash account. Currency is first-class and drives transaction currency.
 model Account {
   id        String      @id @default(cuid())
@@ -140,6 +152,7 @@ model Transaction {
   account  Account         @relation(fields: [accountId], references: [id], onDelete: Restrict)
   division AccountDivision @relation(fields: [divisionId], references: [id], onDelete: Restrict)
   category Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  debt     Debt?
 
   @@index([type, date])
   @@index([accountId, date])
@@ -178,6 +191,32 @@ model Transfer {
   @@index([fromAccountId, date])
   @@index([toAccountId, date])
   @@index([date])
+}
+
+/// Money owed to/from a person. Settling creates an income or expense.
+model Debt {
+  id            String        @id @default(cuid())
+  /// Person involved (who owes / whom I owe).
+  counterparty  String
+  title         String
+  notes         String?
+  direction     DebtDirection
+  status        DebtStatus    @default(OPEN)
+  amount        Decimal       @db.Decimal(19, 4)
+  currency      Currency
+  /// When the debt was recorded / started.
+  date          DateTime      @db.Date
+  settledAt     DateTime?
+  /// Ledger entry created when the debt is settled.
+  transactionId String?       @unique
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@index([status, date])
+  @@index([direction, status])
+  @@index([counterparty])
 }
 
 /// App-wide settings (FX default for net-worth aggregation and appearance).

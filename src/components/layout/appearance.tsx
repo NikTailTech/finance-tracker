@@ -17,7 +17,6 @@ import {
 export type AppearanceState = {
   theme: AppTheme;
   primaryColor: string;
-  icon: string;
   appName: string;
   navOrder: string[];
   displayCurrency: "EUR" | "CHF";
@@ -76,7 +75,7 @@ export function AppearanceProvider({
       document.head.appendChild(document.createElement("link"));
     link.rel = "icon";
     link.type = "image/svg+xml";
-    link.href = `/api/favicon?icon=${encodeURIComponent(appearance.icon)}&color=${encodeURIComponent(appearance.primaryColor)}`;
+    link.href = `/api/favicon?color=${encodeURIComponent(appearance.primaryColor)}`;
     document.title = appearance.appName;
   }, [appearance, mode]);
 

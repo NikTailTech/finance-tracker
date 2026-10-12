@@ -253,6 +253,45 @@ export const categoryReorderSchema = z.object({
   orderedIds: z.array(z.string().cuid()).min(1),
 });
 
+export const debtCreateSchema = z.object({
+  counterparty: z.string().trim().min(1).max(120),
+  title: z.string().trim().min(1).max(200),
+  notes: z.string().trim().max(2000).optional().nullable(),
+  direction: z.enum(["OWED_TO_ME", "I_OWE"]),
+  amount: moneyString(4),
+  currency: z.enum(["EUR", "CHF"]),
+  date: dateString,
+});
+
+export const debtUpdateSchema = z
+  .object({
+    counterparty: z.string().trim().min(1).max(120).optional(),
+    title: z.string().trim().min(1).max(200).optional(),
+    notes: z.string().trim().max(2000).optional().nullable(),
+    direction: z.enum(["OWED_TO_ME", "I_OWE"]).optional(),
+    amount: moneyString(4).optional(),
+    currency: z.enum(["EUR", "CHF"]).optional(),
+    date: dateString.optional(),
+  })
+  .refine(
+    (data) =>
+      data.counterparty !== undefined ||
+      data.title !== undefined ||
+      data.notes !== undefined ||
+      data.direction !== undefined ||
+      data.amount !== undefined ||
+      data.currency !== undefined ||
+      data.date !== undefined,
+    { message: "No fields to update" },
+  );
+
+/** Settle an open debt into an income (they owe me) or expense (I owe). */
+export const debtSettleSchema = z.object({
+  accountId: z.string().cuid(),
+  divisionId: z.string().cuid(),
+  categoryId: z.string().cuid(),
+});
+
 export const settingsUpdateSchema = z.object({
   eurToChfRate: z
     .string()
@@ -285,7 +324,6 @@ export const settingsUpdateSchema = z.object({
     .trim()
     .regex(/^#[0-9a-fA-F]{6}$/, "Color must be a hex value like #3dba7e")
     .optional(),
-  icon: z.enum(["piggy", "wallet", "coins", "landmark", "banknote", "gem"]).optional(),
   appName: z.string().trim().min(1).max(40).optional(),
   navOrder: z.array(z.string().min(1)).optional(),
   dateFormat: z

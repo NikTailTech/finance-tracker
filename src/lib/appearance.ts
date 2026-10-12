@@ -4,6 +4,7 @@ export const NAV_ITEMS = [
   { href: "/income", label: "Income" },
   { href: "/review", label: "Review" },
   { href: "/change", label: "Change" },
+  { href: "/debts", label: "Debts" },
   { href: "/accounts", label: "Accounts" },
   { href: "/categories", label: "Categories" },
   { href: "/templates", label: "Templates" },
@@ -12,16 +13,6 @@ export const NAV_ITEMS = [
 
 export const NAV_HREFS = NAV_ITEMS.map((item) => item.href);
 
-export const APP_ICONS = [
-  "piggy",
-  "wallet",
-  "coins",
-  "landmark",
-  "banknote",
-  "gem",
-] as const;
-
-export type AppIcon = (typeof APP_ICONS)[number];
 export type AppTheme = "dark" | "light" | "system";
 
 export const COLOR_PRESETS = [
@@ -66,26 +57,32 @@ export function primaryVars(hex: string): Record<string, string> {
   };
 }
 
-export function faviconSvg(icon: string, color: string) {
+/** Fixed bank-building mark for favicon (primary color tint). */
+export function faviconSvg(color: string) {
   const fill = isHexColor(color) ? color : "#3dba7e";
-  const marks: Record<string, string> = {
-    piggy:
-      '<ellipse cx="16" cy="18" rx="8" ry="6" fill="currentColor"/><circle cx="20.5" cy="16.2" r="1.1" fill="#102117"/><rect x="12" y="13.2" width="5" height="1.3" rx="0.6" fill="#102117" opacity="0.45"/>',
-    wallet:
-      '<rect x="7" y="10" width="18" height="13" rx="2" fill="currentColor"/><rect x="7" y="8" width="12" height="4" rx="1" fill="currentColor"/><circle cx="20" cy="16.5" r="1.3" fill="#102117"/>',
-    coins:
-      '<ellipse cx="13" cy="14" rx="6" ry="3" fill="currentColor"/><path d="M7 14v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" fill="currentColor"/><ellipse cx="19" cy="11" rx="5" ry="2.4" fill="currentColor" opacity="0.85"/>',
-    landmark:
-      '<path d="M6 13h20L16 7 6 13z" fill="currentColor"/><rect x="8" y="13" width="2.2" height="7" fill="currentColor"/><rect x="14.9" y="13" width="2.2" height="7" fill="currentColor"/><rect x="21.8" y="13" width="2.2" height="7" fill="currentColor"/><rect x="6" y="21" width="20" height="2.2" fill="currentColor"/>',
-    banknote:
-      '<rect x="5" y="10" width="22" height="12" rx="2" fill="currentColor"/><circle cx="16" cy="16" r="2.4" fill="#102117" opacity="0.35"/>',
-    gem:
-      '<path d="M8 13 12 7h8l4 6-8 12L8 13z" fill="currentColor"/>',
-  };
-  const mark = marks[icon] ?? marks.piggy;
+  const r = Number.parseInt(fill.slice(1, 3), 16);
+  const g = Number.parseInt(fill.slice(3, 5), 16);
+  const b = Number.parseInt(fill.slice(5, 7), 16);
+  const light = `rgb(${Math.min(255, r + 48)}, ${Math.min(255, g + 48)}, ${Math.min(255, b + 40)})`;
+  const dark = `rgb(${Math.max(0, r - 55)}, ${Math.max(0, g - 55)}, ${Math.max(0, b - 45)})`;
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="8" fill="#0d1210"/>
-  <g color="${fill}">${mark}</g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="mark" x1="8" y1="6" x2="24" y2="26" gradientUnits="userSpaceOnUse">
+      <stop stop-color="${light}"/>
+      <stop offset="1" stop-color="${fill}"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(16 16) scale(1.28) translate(-16 -16)">
+    <path d="M16 5.2 6.8 11.4a.9.9 0 0 0 .5 1.6h17.4a.9.9 0 0 0 .5-1.6L16 5.2Z" fill="url(#mark)"/>
+    <rect x="7.4" y="13.2" width="17.2" height="1.35" rx="0.5" fill="url(#mark)" opacity="0.9"/>
+    <rect x="8.6" y="15.1" width="2.2" height="7.6" rx="0.55" fill="url(#mark)"/>
+    <rect x="12.9" y="15.1" width="2.2" height="7.6" rx="0.55" fill="url(#mark)"/>
+    <rect x="17" y="15.1" width="2.2" height="7.6" rx="0.55" fill="url(#mark)"/>
+    <rect x="21.2" y="15.1" width="2.2" height="7.6" rx="0.55" fill="url(#mark)"/>
+    <rect x="6.8" y="23.1" width="18.4" height="2.1" rx="0.6" fill="url(#mark)"/>
+    <rect x="8.2" y="25.5" width="15.6" height="1.35" rx="0.45" fill="url(#mark)" opacity="0.75"/>
+    <circle cx="16" cy="10.1" r="1.15" fill="${dark}" opacity="0.55"/>
+  </g>
 </svg>`;
 }

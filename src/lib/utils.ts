@@ -17,3 +17,8 @@ export const TRANSFER_KIND_LABELS: Record<string, string> = {
   DIVISION: "Division transfer",
   CONVERSION: "Currency conversion",
 };
+
+export const DEBT_DIRECTION_LABELS: Record<string, string> = {
+  OWED_TO_ME: "They owe me",
+  I_OWE: "I owe them",
+};

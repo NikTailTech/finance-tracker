@@ -1,17 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import {
-  ArrowDown,
-  ArrowUp,
-  Banknote,
-  Coins,
-  Gem,
-  Landmark,
-  PiggyBank,
-  Wallet,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { useAppearance, type AppearanceState } from "@/components/layout/appearance";
 import {
   Card,
@@ -22,13 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/form";
-import {
-  APP_ICONS,
-  COLOR_PRESETS,
-  NAV_ITEMS,
-  type AppIcon,
-  type AppTheme,
-} from "@/lib/appearance";
+import { COLOR_PRESETS, NAV_ITEMS, type AppTheme } from "@/lib/appearance";
 import {
   DATE_FORMAT_OPTIONS,
   resolveDateFormat,
@@ -37,15 +21,6 @@ import {
 import { fetchJson } from "@/lib/hooks";
 import { formatMoneyInput } from "@/lib/money";
 import { cn } from "@/lib/utils";
-
-const BRAND_ICONS: Record<AppIcon, LucideIcon> = {
-  piggy: PiggyBank,
-  wallet: Wallet,
-  coins: Coins,
-  landmark: Landmark,
-  banknote: Banknote,
-  gem: Gem,
-};
 
 export function SettingsPage() {
   const { appearance, setAppearance } = useAppearance();
@@ -88,7 +63,6 @@ export function SettingsPage() {
         body: JSON.stringify({
           theme: draft.theme,
           primaryColor: draft.primaryColor,
-          icon: draft.icon,
           appName: draft.appName.trim(),
           navOrder: draft.navOrder,
           displayCurrency: draft.displayCurrency,
@@ -132,7 +106,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
           <CardDescription>
-            Theme, brand color, name, and the icon used in the menu and favicon.
+            Theme, brand color, and the name shown in the menu.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -203,31 +177,6 @@ export function SettingsPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>App icon and favicon</Label>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-              {APP_ICONS.map((icon) => {
-                const Icon = BRAND_ICONS[icon];
-                const selected = draft.icon === icon;
-                return (
-                  <button
-                    key={icon}
-                    type="button"
-                    aria-label={icon}
-                    onClick={() => patch("icon", icon)}
-                    className={cn(
-                      "flex min-h-14 items-center justify-center rounded-xl border",
-                      selected
-                        ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                        : "border-[var(--border)] text-[var(--muted-foreground)]",
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </CardContent>
       </Card>
 

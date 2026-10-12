@@ -15,7 +15,6 @@ function serializeSettings(settings: {
   displayCurrency: "EUR" | "CHF";
   theme: string;
   primaryColor: string;
-  icon: string;
   appName: string;
   navOrder: string;
   dateFormat: string;
@@ -26,7 +25,6 @@ function serializeSettings(settings: {
     displayCurrency: settings.displayCurrency,
     theme: settings.theme,
     primaryColor: settings.primaryColor,
-    icon: settings.icon,
     appName: settings.appName,
     navOrder: resolveNavOrder(settings.navOrder),
     dateFormat: resolveDateFormat(settings.dateFormat),
@@ -65,7 +63,6 @@ export async function PATCH(request: Request) {
       displayCurrency?: "EUR" | "CHF";
       theme?: string;
       primaryColor?: string;
-      icon?: string;
       appName?: string;
       navOrder?: string;
       dateFormat?: string;
@@ -75,7 +72,6 @@ export async function PATCH(request: Request) {
     if (body.displayCurrency) data.displayCurrency = body.displayCurrency;
     if (body.theme) data.theme = body.theme;
     if (body.primaryColor) data.primaryColor = body.primaryColor;
-    if (body.icon) data.icon = body.icon;
     if (body.appName) data.appName = body.appName;
     if (body.navOrder) data.navOrder = body.navOrder.join(",");
     if (body.dateFormat) data.dateFormat = body.dateFormat;

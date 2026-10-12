@@ -4,14 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeftRight,
-  Banknote,
-  Coins,
-  Gem,
-  Landmark,
+  HandCoins,
   LayoutDashboard,
   LayoutTemplate,
   ListOrdered,
-  PiggyBank,
   Settings,
   Tags,
   TrendingDown,
@@ -25,6 +21,7 @@ import { useMemo, useState } from "react";
 import { NAV_ITEMS } from "@/lib/appearance";
 import { cn } from "@/lib/utils";
 import { useAppearance } from "@/components/layout/appearance";
+import { BrandMark } from "@/components/layout/brand-mark";
 
 const NAV_ICONS: Record<string, LucideIcon> = {
   "/dashboard": LayoutDashboard,
@@ -32,26 +29,17 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "/income": TrendingUp,
   "/review": ListOrdered,
   "/change": ArrowLeftRight,
+  "/debts": HandCoins,
   "/accounts": Wallet,
   "/categories": Tags,
   "/templates": LayoutTemplate,
   "/settings": Settings,
 };
 
-const BRAND_ICONS: Record<string, LucideIcon> = {
-  piggy: PiggyBank,
-  wallet: Wallet,
-  coins: Coins,
-  landmark: Landmark,
-  banknote: Banknote,
-  gem: Gem,
-};
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { appearance } = useAppearance();
-  const BrandIcon = BRAND_ICONS[appearance.icon] ?? PiggyBank;
 
   const nav = useMemo(() => {
     const byHref = new Map(NAV_ITEMS.map((item) => [item.href, item]));
@@ -70,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md lg:hidden">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
-            <BrandIcon className="h-5 w-5 shrink-0 text-[var(--primary)]" />
+            <BrandMark className="h-6 w-6 shrink-0 text-[var(--primary)]" />
             <span className="truncate font-[family-name:var(--font-display)] text-lg font-semibold tracking-tight">
               {appearance.appName}
             </span>
@@ -113,8 +101,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="mx-auto flex min-h-screen w-full max-w-7xl gap-0 lg:gap-8 lg:px-6">
         <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-[var(--border)] py-8 pr-4 lg:flex">
           <div className="mb-10 flex items-center gap-2 px-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)]">
-              <BrandIcon className="h-5 w-5" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0c110f] text-[var(--primary)] ring-1 ring-[var(--border)]">
+              <BrandMark className="h-7 w-7" />
             </div>
             <div className="min-w-0">
               <p className="truncate font-[family-name:var(--font-display)] text-lg font-semibold leading-none tracking-tight">

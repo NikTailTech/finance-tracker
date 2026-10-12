@@ -7,7 +7,6 @@ function defaultAppearance(): AppearanceState {
   return {
     theme: "dark",
     primaryColor: "#3dba7e",
-    icon: "piggy",
     appName: "Finance Tracker",
     navOrder: resolveNavOrder(""),
     displayCurrency: "EUR",
@@ -36,7 +35,6 @@ export async function loadAppearance(): Promise<AppearanceState> {
   return {
     theme,
     primaryColor: settings.primaryColor,
-    icon: settings.icon,
     appName: settings.appName,
     navOrder: resolveNavOrder(settings.navOrder),
     displayCurrency: settings.displayCurrency,
