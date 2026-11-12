@@ -134,8 +134,8 @@ export function AccountsPage() {
           Accounts
         </h1>
         <p className="mt-1 text-[var(--muted-foreground)]">
-          Rename accounts (e.g. bank names) or add new ones. Each gets Needs,
-          Play, Investment, and Savings.
+          Start by adding your accounts (banks, cash, etc.). Each one gets
+          Needs, Play, Investment, and Savings envelopes.
         </p>
       </div>
 

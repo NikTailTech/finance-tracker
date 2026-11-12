@@ -33,6 +33,3 @@ services:
 
 volumes:
   finance_tracker_pg:
-    # Reuses the existing local Docker volume (data preserved).
-    external: true
-    name: money-tracker_money_tracker_pg

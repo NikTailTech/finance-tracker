@@ -221,7 +221,7 @@ export function CategoriesPage() {
           Categories
         </h1>
         <p className="mt-1 text-[var(--muted-foreground)]">
-          Expense and income categories used when you record transactions.
+          Create your own expense and income categories — nothing is preloaded.
         </p>
       </div>
 
